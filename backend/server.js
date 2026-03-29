@@ -29,7 +29,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Allow requests from the Vite dev server (port 5173) and production frontend
-app.use(cors({ origin: ["http://localhost:5173", "http://localhost:4173"] }));
+app.use(cors({ origin: ["http://localhost:5173", "http://localhost:4173", "http://10.104.11.233:5173"] }));
 
 // Parse incoming JSON request bodies
 app.use(express.json());

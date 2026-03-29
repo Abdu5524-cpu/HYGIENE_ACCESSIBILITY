@@ -158,11 +158,13 @@ function NearbyPanel({ userPos, activeFilter, onFilterChange, onFlyTo, onClose }
   const [search, setSearch] = useState("");
   const [nearbyAlerts, setNearbyAlerts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
 
   // Fetch from the geo endpoint whenever the panel opens or userPos changes
   useEffect(() => {
     if (!userPos) return;
     setLoading(true);
+    setFetchError(null);
     apiFetch(`/api/reports/nearby?lat=${userPos[0]}&lng=${userPos[1]}&radius=${NEARBY_RADIUS_M}`)
       .then(reports => {
         setNearbyAlerts(reports.map(r => ({
@@ -176,7 +178,7 @@ function NearbyPanel({ userPos, activeFilter, onFilterChange, onFlyTo, onClose }
           dist: getDistance(userPos[0], userPos[1], r.location.coordinates[1], r.location.coordinates[0]),
         })));
       })
-      .catch(err => console.error("Nearby fetch failed:", err.message))
+      .catch(err => setFetchError(err.message))
       .finally(() => setLoading(false));
   }, [userPos]);
 
@@ -210,6 +212,8 @@ function NearbyPanel({ userPos, activeFilter, onFilterChange, onFlyTo, onClose }
       <div style={{ overflowY: "auto", flex: 1 }}>
         {loading
           ? <div style={{ padding: "16px 14px", fontSize: 13, color: "#6b7280", textAlign: "center" }}>Loading...</div>
+          : fetchError
+          ? <div style={{ padding: "16px 14px", fontSize: 13, color: "#991B1B", textAlign: "center" }}>{fetchError}</div>
           : withDistance.length === 0
           ? <div style={{ padding: "16px 14px", fontSize: 13, color: "#6b7280", textAlign: "center" }}>{userPos ? "No alerts nearby" : "Waiting for GPS..."}</div>
           : withDistance.map(a => (
@@ -446,6 +450,7 @@ export default function App() {
   });
 
   const [alerts, setAlerts] = useState([]);
+  const [alertsError, setAlertsError] = useState(null);
   const [addMode, setAddMode] = useState(false);
   const [pendingLatLng, setPending] = useState(null);
   const [activeFilter, setActiveFilter] = useState("all");
@@ -480,7 +485,7 @@ export default function App() {
           dismisses: r.resolveVotes ? r.resolveVotes.length : 0,
         })));
       })
-      .catch(err => console.error("Failed to load reports:", err));
+      .catch(err => setAlertsError(err.message));
   }, []);
 
   // Persist user to localStorage whenever it changes
@@ -617,6 +622,14 @@ export default function App() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+
+      {/* Backend connectivity error banner */}
+      {alertsError && (
+        <div style={{ background: "#FEF2F2", borderBottom: "1px solid #FECACA", padding: "8px 16px", fontSize: 13, color: "#991B1B", display: "flex", justifyContent: "space-between", alignItems: "center", zIndex: 600 }}>
+          <span>Could not load reports: {alertsError}</span>
+          <button onClick={() => setAlertsError(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#991B1B", lineHeight: 1 }}>×</button>
+        </div>
+      )}
 
       {/* Navbar */}
       <div style={{ padding: "10px 16px", background: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", zIndex: 500, position: "relative" }}>
