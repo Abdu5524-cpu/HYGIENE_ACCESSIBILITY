@@ -400,7 +400,7 @@ export default function App() {
       {/* Map */}
       <div style={{ flex: 1, position: "relative" }}>
         <MapContainer center={[40.73, -73.99]} zoom={13} style={{ height: "100%", width: "100%" }}>
-          <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>' />
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="© OpenStreetMap contributors" />
           <MapClickHandler addMode={addMode} onMapClick={setPending} />
           <MapController flyToRef={flyToRef} />
           {userPos && (
