@@ -1,0 +1,21 @@
+body {
+    background-color: lightgreen;
+}
+
+.profile{
+    border-radius: 50%;
+    height: 10%;
+    aspect-ratio: 1;
+    position: fixed;
+    bottom: 1%; left: 1%;
+    background-image: url("https://static.vecteezy.com/system/resources/previews/036/280/650/large_2x/default-avatar-profile-icon-social-media-user-image-gray-avatar-icon-blank-profile-silhouette-illustration-vector.jpg");
+    background-size: cover;
+    border: none;
+    cursor: pointer;
+}
+
+.profileWindow{
+    border-radius: 5%;
+    background: white;
+    height: 100px; width: 100px;
+}
