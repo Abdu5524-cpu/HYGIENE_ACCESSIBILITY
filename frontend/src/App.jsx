@@ -13,13 +13,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-const INITIAL_ALERTS = [
-  { id: 1, lat: 40.7128, lng: -74.006,  title: "Water main break",   cat: "hazard",  desc: "Avoid W 34th St",      time: Date.now() - 1000 * 60 * 5,  confirms: 0, dismisses: 0 },
-  { id: 2, lat: 40.758,  lng: -73.985,  title: "Heavy traffic",       cat: "traffic", desc: "Times Sq gridlock",    time: Date.now() - 1000 * 60 * 12, confirms: 0, dismisses: 0 },
-  { id: 3, lat: 40.7484, lng: -73.996,  title: "Suspicious activity", cat: "crime",   desc: "Near Herald Sq",       time: Date.now() - 1000 * 60 * 22, confirms: 0, dismisses: 0 },
-  { id: 4, lat: 40.7061, lng: -73.997,  title: "Street fair today",   cat: "info",    desc: "Brooklyn Bridge area", time: Date.now() - 1000 * 60 * 40, confirms: 0, dismisses: 0 },
-];
-
 const ALERT_RADIUS_M = 100;
 const NEARBY_RADIUS_M = 2000;
 
@@ -51,7 +44,8 @@ const searchIcon = L.divIcon({
 });
 
 function makeIcon(cat) {
-  const c = CATS[cat];
+  // Fall back to first CATS entry if cat isn't a known key (e.g. DB category slugs)
+  const c = CATS[cat] || CATS[Object.keys(CATS)[0]];
   return L.divIcon({
     className: "",
     html: `<div style="width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${c.color};display:flex;align-items:center;justify-content:center;">
@@ -160,11 +154,33 @@ function AddAlertPanel({ latlng, onSubmit, onClose }) {
   );
 }
 
-function NearbyPanel({ alerts, userPos, activeFilter, onFilterChange, onFlyTo, onClose }) {
+function NearbyPanel({ userPos, activeFilter, onFilterChange, onFlyTo, onClose }) {
   const [search, setSearch] = useState("");
-  const withDistance = alerts
-    .map(a => ({ ...a, dist: userPos ? getDistance(userPos[0], userPos[1], a.lat, a.lng) : null }))
-    .filter(a => userPos ? a.dist <= NEARBY_RADIUS_M : true)
+  const [nearbyAlerts, setNearbyAlerts] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch from the geo endpoint whenever the panel opens or userPos changes
+  useEffect(() => {
+    if (!userPos) return;
+    setLoading(true);
+    apiFetch(`/api/reports/nearby?lat=${userPos[0]}&lng=${userPos[1]}&radius=${NEARBY_RADIUS_M}`)
+      .then(reports => {
+        setNearbyAlerts(reports.map(r => ({
+          id: r._id,
+          lat: r.location.coordinates[1],
+          lng: r.location.coordinates[0],
+          title: r.title,
+          desc: r.description,
+          cat: Object.keys(CATS).find(k => r.categories.includes(k)) || Object.keys(CATS)[0],
+          time: new Date(r.createdAt).getTime(),
+          dist: getDistance(userPos[0], userPos[1], r.location.coordinates[1], r.location.coordinates[0]),
+        })));
+      })
+      .catch(err => console.error("Nearby fetch failed:", err.message))
+      .finally(() => setLoading(false));
+  }, [userPos]);
+
+  const withDistance = nearbyAlerts
     .filter(a => activeFilter === "all" || a.cat === activeFilter)
     .filter(a => a.title.toLowerCase().includes(search.toLowerCase()) || (a.desc || "").toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => (a.dist ?? 99999) - (b.dist ?? 99999));
@@ -192,8 +208,10 @@ function NearbyPanel({ alerts, userPos, activeFilter, onFilterChange, onFlyTo, o
         ))}
       </div>
       <div style={{ overflowY: "auto", flex: 1 }}>
-        {withDistance.length === 0
-          ? <div style={{ padding: "16px 14px", fontSize: 13, color: "#6b7280", textAlign: "center" }}>No alerts found</div>
+        {loading
+          ? <div style={{ padding: "16px 14px", fontSize: 13, color: "#6b7280", textAlign: "center" }}>Loading...</div>
+          : withDistance.length === 0
+          ? <div style={{ padding: "16px 14px", fontSize: 13, color: "#6b7280", textAlign: "center" }}>{userPos ? "No alerts nearby" : "Waiting for GPS..."}</div>
           : withDistance.map(a => (
             <div key={a.id} onClick={() => onFlyTo([a.lat, a.lng])}
               style={{ padding: "10px 14px", borderBottom: "1px solid #f3f4f6", cursor: "pointer" }}
@@ -427,7 +445,7 @@ export default function App() {
     return stored ? JSON.parse(stored) : null;
   });
 
-  const [alerts, setAlerts] = useState(INITIAL_ALERTS);
+  const [alerts, setAlerts] = useState([]);
   const [addMode, setAddMode] = useState(false);
   const [pendingLatLng, setPending] = useState(null);
   const [activeFilter, setActiveFilter] = useState("all");
@@ -443,6 +461,27 @@ export default function App() {
   const notifiedIds = useRef(new Set());
   const flyToRef = useRef(null);
   const searchTimeout = useRef(null);
+
+  // Load all reports from the DB on mount
+  useEffect(() => {
+    apiFetch("/api/reports")
+      .then(reports => {
+        // Normalise DB shape to the shape the rest of the UI expects
+        setAlerts(reports.map(r => ({
+          id: r._id,
+          lat: r.location.coordinates[1],
+          lng: r.location.coordinates[0],
+          title: r.title,
+          desc: r.description,
+          // Use first matching CATS key from categories array, else first CATS key
+          cat: Object.keys(CATS).find(k => r.categories.includes(k)) || Object.keys(CATS)[0],
+          time: new Date(r.createdAt).getTime(),
+          confirms: r.confirmCount || 0,
+          dismisses: r.resolveVotes ? r.resolveVotes.length : 0,
+        })));
+      })
+      .catch(err => console.error("Failed to load reports:", err));
+  }, []);
 
   // Persist user to localStorage whenever it changes
   useEffect(() => {
@@ -508,15 +547,25 @@ export default function App() {
     else setGpsError("Location not available yet");
   };
 
-  const handleStillThere = (alertId) => {
-    setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, confirms: (a.confirms || 0) + 1 } : a));
+  const handleStillThere = async (alertId) => {
+    try {
+      await apiFetch(`/api/reports/${alertId}/confirm`, { method: "POST" });
+      setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, confirms: (a.confirms || 0) + 1 } : a));
+    } catch (err) {
+      console.error("Failed to confirm report:", err.message);
+    }
   };
 
-  const handleNotThere = (alertId) => {
-    setAlerts(prev => prev
-      .map(a => a.id === alertId ? { ...a, dismisses: (a.dismisses || 0) + 1 } : a)
-      .filter(a => (a.dismisses || 0) < 3)
-    );
+  const handleNotThere = async (alertId) => {
+    try {
+      await apiFetch(`/api/reports/${alertId}/resolve`, { method: "POST" });
+      setAlerts(prev => prev
+        .map(a => a.id === alertId ? { ...a, dismisses: (a.dismisses || 0) + 1 } : a)
+        .filter(a => (a.dismisses || 0) < 3)
+      );
+    } catch (err) {
+      console.error("Failed to resolve report:", err.message);
+    }
   };
 
   const filtered = activeFilter === "all" ? alerts : alerts.filter(a => a.cat === activeFilter);
@@ -668,7 +717,7 @@ export default function App() {
         </MapContainer>
 
         {showNearby && (
-          <NearbyPanel alerts={alerts} userPos={userPos} activeFilter={activeFilter} onFilterChange={setActiveFilter} onFlyTo={(pos) => flyToRef.current && flyToRef.current(pos, 16)} onClose={() => setShowNearby(false)} />
+          <NearbyPanel userPos={userPos} activeFilter={activeFilter} onFilterChange={setActiveFilter} onFlyTo={(pos) => flyToRef.current && flyToRef.current(pos, 16)} onClose={() => setShowNearby(false)} />
         )}
         {pendingLatLng && (
           <AddAlertPanel latlng={pendingLatLng} onSubmit={handleSubmit} onClose={() => { setPending(null); setAddMode(false); }} />
