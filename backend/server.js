@@ -20,6 +20,7 @@ import userRoutes from "./routes/users.js";
 import reportRoutes from "./routes/hazard_reports.js";
 import notificationRoutes from "./routes/notifications.js";
 import conditionRoutes from "./routes/conditions.js";
+import categoryRoutes from "./routes/categories.js";
 
 // Load .env variables before anything else
 dotenv.config();
@@ -38,6 +39,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/conditions", conditionRoutes);
+app.use("/api/categories", categoryRoutes);
 
 // Connect to MongoDB, then start the server.
 // If the database connection fails, we log the error and exit —

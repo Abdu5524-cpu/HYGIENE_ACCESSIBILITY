@@ -76,35 +76,84 @@ function MapController({ flyToRef }) {
 
 function AddAlertPanel({ latlng, onSubmit, onClose }) {
   const [title, setTitle] = useState("");
-  const [cat, setCat] = useState("hazard");
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [desc, setDesc] = useState("");
+  const [allCategories, setAllCategories] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleSubmit = () => {
+  // Fetch the full categories list from the backend on mount
+  useEffect(() => {
+    apiFetch("/api/categories")
+      .then(setAllCategories)
+      .catch(() => setAllCategories([]));
+  }, []);
+
+  const toggleCategory = (slug) => {
+    setSelectedCategories(prev =>
+      prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]
+    );
+  };
+
+  const handleSubmit = async () => {
     if (!title.trim()) return;
-    onSubmit({ title: title.trim(), cat, desc: desc.trim() });
-    setTitle(""); setDesc(""); setCat("hazard");
+    if (selectedCategories.length === 0) { setError("Select at least one category"); return; }
+    setSaving(true);
+    setError(null);
+    try {
+      await onSubmit({
+        title: title.trim(),
+        description: desc.trim() || title.trim(), // description is required by schema
+        categories: selectedCategories,
+        latlng,
+      });
+      setTitle(""); setDesc(""); setSelectedCategories([]);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div style={{ position: "absolute", right: 12, top: 12, width: 240, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, zIndex: 1000, boxShadow: "0 2px 12px rgba(0,0,0,0.12)", overflow: "hidden" }}>
-      <div style={{ padding: "10px 14px", fontWeight: 500, fontSize: 13, borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between" }}>
+    <div style={{ position: "absolute", right: 12, top: 12, width: 260, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, zIndex: 1000, boxShadow: "0 2px 12px rgba(0,0,0,0.12)", overflow: "hidden", maxHeight: "80vh", display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "10px 14px", fontWeight: 500, fontSize: 13, borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", flexShrink: 0 }}>
         New alert
         <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "#6b7280" }}>x</button>
       </div>
-      <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8, overflowY: "auto" }}>
         <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Title (e.g. Road closed)"
           style={{ fontSize: 13, padding: "6px 8px", border: "1px solid #d1d5db", borderRadius: 6, outline: "none" }} />
-        <select value={cat} onChange={e => setCat(e.target.value)}
-          style={{ fontSize: 13, padding: "6px 8px", border: "1px solid #d1d5db", borderRadius: 6 }}>
-          {Object.entries(CATS).map(([key, c]) => (
-            <option key={key} value={key}>{c.icon} {c.label}</option>
-          ))}
-        </select>
         <textarea value={desc} onChange={e => setDesc(e.target.value)} placeholder="Description (optional)"
-          style={{ fontSize: 13, padding: "6px 8px", border: "1px solid #d1d5db", borderRadius: 6, height: 64, resize: "none" }} />
+          style={{ fontSize: 13, padding: "6px 8px", border: "1px solid #d1d5db", borderRadius: 6, height: 56, resize: "none" }} />
+
+        {/* Category multi-select — slugs from the backend categories collection */}
+        <div style={{ fontSize: 12, fontWeight: 500, color: "#374151" }}>
+          Categories <span style={{ fontWeight: 400, color: "#6b7280" }}>(select all that apply)</span>
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+          {allCategories.length === 0
+            ? <span style={{ fontSize: 12, color: "#9ca3af" }}>Loading...</span>
+            : allCategories.map(c => {
+              const on = selectedCategories.includes(c.slug);
+              return (
+                <button key={c.slug} onClick={() => toggleCategory(c.slug)} style={{
+                  padding: "3px 8px", fontSize: 11, borderRadius: 20, cursor: "pointer",
+                  border: "1px solid #d1d5db",
+                  background: on ? "#185FA5" : "#f9fafb",
+                  color: on ? "#fff" : "#374151",
+                }}>
+                  {c.label}
+                </button>
+              );
+            })
+          }
+        </div>
+
         <div style={{ fontSize: 11, color: "#6b7280" }}>Lat: {latlng.lat.toFixed(4)}, Lng: {latlng.lng.toFixed(4)}</div>
-        <button onClick={handleSubmit} style={{ padding: 8, background: "#185FA5", color: "#fff", border: "none", borderRadius: 6, fontWeight: 500, cursor: "pointer" }}>
-          Post alert
+        {error && <div style={{ fontSize: 12, color: "#A32D2D" }}>{error}</div>}
+        <button onClick={handleSubmit} disabled={saving} style={{ padding: 8, background: "#185FA5", color: "#fff", border: "none", borderRadius: 6, fontWeight: 500, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}>
+          {saving ? "Posting..." : "Post alert"}
         </button>
       </div>
     </div>
@@ -381,7 +430,6 @@ export default function App() {
   const [alerts, setAlerts] = useState(INITIAL_ALERTS);
   const [addMode, setAddMode] = useState(false);
   const [pendingLatLng, setPending] = useState(null);
-  const [nextId, setNextId] = useState(5);
   const [activeFilter, setActiveFilter] = useState("all");
   const [userPos, setUserPos] = useState(null);
   const [gpsError, setGpsError] = useState(null);
@@ -473,9 +521,30 @@ export default function App() {
 
   const filtered = activeFilter === "all" ? alerts : alerts.filter(a => a.cat === activeFilter);
 
-  const handleSubmit = ({ title, cat, desc }) => {
-    setAlerts(prev => [...prev, { id: nextId, lat: pendingLatLng.lat, lng: pendingLatLng.lng, title, cat, desc, time: Date.now(), confirms: 0, dismisses: 0 }]);
-    setNextId(n => n + 1);
+  const handleSubmit = async ({ title, description, categories, latlng }) => {
+    const saved = await apiFetch("/api/reports", {
+      method: "POST",
+      body: JSON.stringify({
+        title,
+        description,
+        categories,
+        location: { type: "Point", coordinates: [latlng.lng, latlng.lat] },
+        userId: user._id,
+      }),
+    });
+    // Add to local state using the first category for the map icon (falls back to first CATS key)
+    const cat = Object.keys(CATS).find(k => categories.includes(k)) || Object.keys(CATS)[0];
+    setAlerts(prev => [...prev, {
+      id: saved._id,
+      lat: latlng.lat,
+      lng: latlng.lng,
+      title,
+      cat,
+      desc: description,
+      time: Date.now(),
+      confirms: 0,
+      dismisses: 0,
+    }]);
     setPending(null);
     setAddMode(false);
   };
