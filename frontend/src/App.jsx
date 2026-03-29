@@ -171,7 +171,7 @@ function NearbyPanel({ alerts, userPos, activeFilter, onFilterChange, onFlyTo, o
 // Supports both login (existing user) and register (new user).
 // On success, calls onLogin with the user object returned by the backend.
 // ---------------------------------------------------------------------------
-function LoginScreen({ onLogin }) {
+function LoginScreen({ onLogin, onBack }) {
   const [mode, setMode] = useState("login"); // "login" | "register"
   const [form, setForm] = useState({ username: "", password: "", firstName: "", lastName: "" });
   const [error, setError] = useState(null);
@@ -207,7 +207,10 @@ function LoginScreen({ onLogin }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#f9fafb" }}>
       <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, padding: "32px 28px", width: 320, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
-        <h1 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 700, color: "#111827" }}>Hazard Hound</h1>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#111827" }}>Hazard Hound</h1>
+          <button onClick={onBack} style={{ background: "none", border: "none", fontSize: 13, color: "#6b7280", cursor: "pointer", padding: "4px 8px", borderRadius: 8 }}>← Back to map</button>
+        </div>
         <p style={{ margin: "0 0 24px", fontSize: 13, color: "#6b7280" }}>
           {mode === "login" ? "Sign in to your account" : "Create a new account"}
         </p>
@@ -368,7 +371,7 @@ function ProfileScreen({ user, onUserUpdate, notifCategories, onToggleCategory, 
 // Manages auth state via localStorage so the user stays logged in on refresh.
 // ---------------------------------------------------------------------------
 export default function App() {
-  const [screen, setScreen] = useState("map"); // "map" | "profile"
+  const [screen, setScreen] = useState("map"); // "map" | "profile" | "login"
   const [user, setUser] = useState(() => {
     // Rehydrate user from localStorage so login persists across page refreshes
     const stored = localStorage.getItem("hh_user");
@@ -477,12 +480,11 @@ export default function App() {
     setAddMode(false);
   };
 
-  // Show login screen if not authenticated
-  if (!user) {
-    return <LoginScreen onLogin={(u) => setUser(u)} />;
+  if (screen === "login") {
+    return <LoginScreen onLogin={(u) => { setUser(u); setScreen("map"); }} onBack={() => setScreen("map")} />;
   }
 
-  if (screen === "profile") {
+  if (screen === "profile" && user) {
     return (
       <ProfileScreen
         user={user}
@@ -523,11 +525,19 @@ export default function App() {
           )}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => setShowNearby(v => !v)} style={{ padding: "6px 12px", fontSize: 13, fontWeight: 500, background: showNearby ? "#185FA5" : "#f9fafb", color: showNearby ? "#fff" : "#374151", border: "1px solid #d1d5db", borderRadius: 8, cursor: "pointer" }}>Nearby</button>
-          <button onClick={handleLocateMe} style={{ padding: "6px 12px", fontSize: 13, fontWeight: 500, background: "#f9fafb", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, cursor: "pointer" }}>Find me</button>
-          <button onClick={() => { setAddMode(v => !v); setPending(null); }} style={{ padding: "6px 14px", fontSize: 13, fontWeight: 500, background: addMode ? "#FCEBEB" : "#185FA5", color: addMode ? "#A32D2D" : "#fff", border: addMode ? "1px solid #A32D2D" : "none", borderRadius: 8, cursor: "pointer" }}>
-            {addMode ? "Cancel" : "+ Add alert"}
-          </button>
+          {user ? (
+            <>
+              <button onClick={() => setShowNearby(v => !v)} style={{ padding: "6px 12px", fontSize: 13, fontWeight: 500, background: showNearby ? "#185FA5" : "#f9fafb", color: showNearby ? "#fff" : "#374151", border: "1px solid #d1d5db", borderRadius: 8, cursor: "pointer" }}>Nearby</button>
+              <button onClick={handleLocateMe} style={{ padding: "6px 12px", fontSize: 13, fontWeight: 500, background: "#f9fafb", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, cursor: "pointer" }}>Find me</button>
+              <button onClick={() => { setAddMode(v => !v); setPending(null); }} style={{ padding: "6px 14px", fontSize: 13, fontWeight: 500, background: addMode ? "#FCEBEB" : "#185FA5", color: addMode ? "#A32D2D" : "#fff", border: addMode ? "1px solid #A32D2D" : "none", borderRadius: 8, cursor: "pointer" }}>
+                {addMode ? "Cancel" : "+ Add alert"}
+              </button>
+            </>
+          ) : (
+            <button onClick={() => setScreen("login")} style={{ padding: "6px 14px", fontSize: 13, fontWeight: 500, background: "#185FA5", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" }}>
+              Sign in
+            </button>
+          )}
         </div>
       </div>
 
@@ -596,8 +606,8 @@ export default function App() {
         )}
       </div>
 
-      {/* Profile button */}
-      <button className="profile-btn" onClick={() => setScreen("profile")} />
+      {/* Profile button — only shown when signed in */}
+      {user && <button className="profile-btn" onClick={() => setScreen("profile")} />}
     </div>
   );
 }
