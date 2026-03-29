@@ -1,0 +1,24 @@
+{
+  "name": "hygiene_accessibility",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Abdu5524-cpu/HYGIENE_ACCESSIBILITY.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Abdu5524-cpu/HYGIENE_ACCESSIBILITY/issues"
+  },
+  "homepage": "https://github.com/Abdu5524-cpu/HYGIENE_ACCESSIBILITY#readme",
+  "dependencies": {
+    "mongodb": "^7.1.1"
+  }
+}

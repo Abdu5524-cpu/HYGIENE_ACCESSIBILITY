@@ -1,0 +1,22 @@
+{
+  "name": "hazard-hound-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Hazard-Hound, a community hazard reporting app",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "setup-db": "node scripts/setup-db.js",
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongodb": "^6.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
