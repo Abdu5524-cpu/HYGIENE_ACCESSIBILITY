@@ -128,7 +128,7 @@ router.post("/", async (req, res) => {
       conditions: conditions || [],       // array of condition slugs
       customConditions: [],               // user-defined conditions start empty
       createdAt: new Date(),
-      updatedAt: null,
+      // updatedAt is omitted on creation — Atlas schema requires it to be a date if present
     };
 
     const result = await getDB().collection("users").insertOne(newUser);

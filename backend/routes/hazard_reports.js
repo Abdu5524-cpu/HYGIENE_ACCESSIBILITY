@@ -127,8 +127,7 @@ router.post("/", async (req, res) => {
       location,              // { type: "Point", coordinates: [lng, lat] }
       userId: new ObjectId(userId),
       createdAt: new Date(),
-      updatedAt: null,
-      confirmedAt: null,
+      // updatedAt and confirmedAt omitted on creation — Atlas schema requires date type if present
       confirmCount: 0,
       resolveVotes: [],      // each vote appends a date; count = resolveVotes.length
     };

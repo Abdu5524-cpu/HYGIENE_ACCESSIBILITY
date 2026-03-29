@@ -94,7 +94,7 @@ router.post("/", async (req, res) => {
     const newNotification = {
       userId: new ObjectId(userId),
       reportId: new ObjectId(reportId),
-      seenAt: null,         // null until the user views it
+      // seenAt omitted on creation — Atlas schema requires date type if present
       dismissed: false,
       createdAt: new Date(),
     };
