@@ -11,6 +11,7 @@
  */
 
 import express from "express";
+import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./db.js";
 
@@ -18,12 +19,16 @@ import { connectDB } from "./db.js";
 import userRoutes from "./routes/users.js";
 import reportRoutes from "./routes/hazard_reports.js";
 import notificationRoutes from "./routes/notifications.js";
+import conditionRoutes from "./routes/conditions.js";
 
 // Load .env variables before anything else
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Allow requests from the Vite dev server (port 5173) and production frontend
+app.use(cors({ origin: ["http://localhost:5173", "http://localhost:4173"] }));
 
 // Parse incoming JSON request bodies
 app.use(express.json());
@@ -32,6 +37,7 @@ app.use(express.json());
 app.use("/api/users", userRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/conditions", conditionRoutes);
 
 // Connect to MongoDB, then start the server.
 // If the database connection fails, we log the error and exit —

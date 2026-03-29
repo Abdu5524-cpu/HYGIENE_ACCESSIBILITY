@@ -4,25 +4,25 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
 import { CATS } from "./constants";
- 
+import { apiFetch } from "./api.js";
+
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
- 
+
 const INITIAL_ALERTS = [
   { id: 1, lat: 40.7128, lng: -74.006,  title: "Water main break",   cat: "hazard",  desc: "Avoid W 34th St",      time: Date.now() - 1000 * 60 * 5,  confirms: 0, dismisses: 0 },
   { id: 2, lat: 40.758,  lng: -73.985,  title: "Heavy traffic",       cat: "traffic", desc: "Times Sq gridlock",    time: Date.now() - 1000 * 60 * 12, confirms: 0, dismisses: 0 },
   { id: 3, lat: 40.7484, lng: -73.996,  title: "Suspicious activity", cat: "crime",   desc: "Near Herald Sq",       time: Date.now() - 1000 * 60 * 22, confirms: 0, dismisses: 0 },
   { id: 4, lat: 40.7061, lng: -73.997,  title: "Street fair today",   cat: "info",    desc: "Brooklyn Bridge area", time: Date.now() - 1000 * 60 * 40, confirms: 0, dismisses: 0 },
 ];
- 
+
 const ALERT_RADIUS_M = 100;
 const NEARBY_RADIUS_M = 2000;
-const CONDITIONS = ["TBD", "TBD", "TBD", "TBD", "TBD", "TBD"];
- 
+
 function getDistance(lat1, lng1, lat2, lng2) {
   const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -30,26 +30,26 @@ function getDistance(lat1, lng1, lat2, lng2) {
   const a = Math.sin(dLat/2) ** 2 + Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dLng/2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
- 
+
 function timeAgo(ts) {
   const s = Math.floor((Date.now() - ts) / 1000);
   if (s < 60) return `${s}s ago`;
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;
   return `${Math.floor(s / 3600)}h ago`;
 }
- 
+
 const userIcon = L.divIcon({
   className: "",
   html: `<div style="width:16px;height:16px;border-radius:50%;background:#185FA5;border:3px solid #fff;box-shadow:0 0 0 2px #185FA5;"></div>`,
   iconSize: [16, 16], iconAnchor: [8, 8],
 });
- 
+
 const searchIcon = L.divIcon({
   className: "",
   html: `<div style="width:18px;height:18px;border-radius:50%;background:#7C3AED;border:3px solid #fff;box-shadow:0 0 0 2px #7C3AED;"></div>`,
   iconSize: [18, 18], iconAnchor: [9, 9],
 });
- 
+
 function makeIcon(cat) {
   const c = CATS[cat];
   return L.divIcon({
@@ -60,12 +60,12 @@ function makeIcon(cat) {
     iconSize: [32, 42], iconAnchor: [16, 42], popupAnchor: [0, -44],
   });
 }
- 
+
 function MapClickHandler({ addMode, onMapClick }) {
   useMapEvents({ click(e) { if (addMode) onMapClick(e.latlng); } });
   return null;
 }
- 
+
 function MapController({ flyToRef }) {
   const map = useMap();
   useEffect(() => {
@@ -73,18 +73,18 @@ function MapController({ flyToRef }) {
   }, [map]);
   return null;
 }
- 
+
 function AddAlertPanel({ latlng, onSubmit, onClose }) {
   const [title, setTitle] = useState("");
   const [cat, setCat] = useState("hazard");
   const [desc, setDesc] = useState("");
- 
+
   const handleSubmit = () => {
     if (!title.trim()) return;
     onSubmit({ title: title.trim(), cat, desc: desc.trim() });
     setTitle(""); setDesc(""); setCat("hazard");
   };
- 
+
   return (
     <div style={{ position: "absolute", right: 12, top: 12, width: 240, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, zIndex: 1000, boxShadow: "0 2px 12px rgba(0,0,0,0.12)", overflow: "hidden" }}>
       <div style={{ padding: "10px 14px", fontWeight: 500, fontSize: 13, borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between" }}>
@@ -110,7 +110,7 @@ function AddAlertPanel({ latlng, onSubmit, onClose }) {
     </div>
   );
 }
- 
+
 function NearbyPanel({ alerts, userPos, activeFilter, onFilterChange, onFlyTo, onClose }) {
   const [search, setSearch] = useState("");
   const withDistance = alerts
@@ -119,7 +119,7 @@ function NearbyPanel({ alerts, userPos, activeFilter, onFilterChange, onFlyTo, o
     .filter(a => activeFilter === "all" || a.cat === activeFilter)
     .filter(a => a.title.toLowerCase().includes(search.toLowerCase()) || (a.desc || "").toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => (a.dist ?? 99999) - (b.dist ?? 99999));
- 
+
   return (
     <div style={{ position: "absolute", left: 12, top: 12, width: 260, background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, zIndex: 1000, boxShadow: "0 2px 12px rgba(0,0,0,0.12)", overflow: "hidden", maxHeight: "70vh", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "10px 14px", fontWeight: 500, fontSize: 13, borderBottom: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -164,26 +164,158 @@ function NearbyPanel({ alerts, userPos, activeFilter, onFilterChange, onFlyTo, o
     </div>
   );
 }
- 
-function ProfileScreen({ notifCategories, onToggleCategory, notifConditions, onToggleCondition, onBack }) {
+
+// ---------------------------------------------------------------------------
+// LoginScreen
+// Shown when no user is stored in localStorage.
+// Supports both login (existing user) and register (new user).
+// On success, calls onLogin with the user object returned by the backend.
+// ---------------------------------------------------------------------------
+function LoginScreen({ onLogin }) {
+  const [mode, setMode] = useState("login"); // "login" | "register"
+  const [form, setForm] = useState({ username: "", password: "", firstName: "", lastName: "" });
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const set = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      let user;
+      if (mode === "login") {
+        user = await apiFetch("/api/users/login", {
+          method: "POST",
+          body: JSON.stringify({ username: form.username, password: form.password }),
+        });
+      } else {
+        user = await apiFetch("/api/users", {
+          method: "POST",
+          body: JSON.stringify(form),
+        });
+      }
+      onLogin(user);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#f9fafb" }}>
+      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, padding: "32px 28px", width: 320, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
+        <h1 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 700, color: "#111827" }}>Hazard Hound</h1>
+        <p style={{ margin: "0 0 24px", fontSize: 13, color: "#6b7280" }}>
+          {mode === "login" ? "Sign in to your account" : "Create a new account"}
+        </p>
+
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {mode === "register" && (
+            <>
+              <input value={form.firstName} onChange={set("firstName")} placeholder="First name" required
+                style={inputStyle} />
+              <input value={form.lastName} onChange={set("lastName")} placeholder="Last name" required
+                style={inputStyle} />
+            </>
+          )}
+          <input value={form.username} onChange={set("username")} placeholder="Username" required
+            style={inputStyle} />
+          <input value={form.password} onChange={set("password")} placeholder="Password" type="password" required
+            style={inputStyle} />
+
+          {error && <p style={{ margin: 0, fontSize: 12, color: "#A32D2D" }}>{error}</p>}
+
+          <button type="submit" disabled={loading}
+            style={{ marginTop: 4, padding: "10px 0", background: "#185FA5", color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
+            {loading ? "..." : mode === "login" ? "Sign in" : "Create account"}
+          </button>
+        </form>
+
+        <p style={{ margin: "16px 0 0", fontSize: 13, textAlign: "center", color: "#6b7280" }}>
+          {mode === "login" ? "No account? " : "Already have one? "}
+          <button onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(null); }}
+            style={{ background: "none", border: "none", color: "#185FA5", cursor: "pointer", fontWeight: 500, fontSize: 13, padding: 0 }}>
+            {mode === "login" ? "Register" : "Sign in"}
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+const inputStyle = {
+  fontSize: 13, padding: "8px 10px",
+  border: "1px solid #d1d5db", borderRadius: 8, outline: "none",
+};
+
+// ---------------------------------------------------------------------------
+// ProfileScreen
+// Fetches the real conditions list from the backend.
+// Condition toggles call POST/DELETE /api/users/:id/conditions.
+// notifCategories (which hazard types to notify about) stay local —
+// they are UI preferences not yet stored in the backend schema.
+// ---------------------------------------------------------------------------
+function ProfileScreen({ user, onUserUpdate, notifCategories, onToggleCategory, onBack, onLogout }) {
+  const [allConditions, setAllConditions] = useState([]);
+  const [loadingConditions, setLoadingConditions] = useState(true);
+  const [togglingSlug, setTogglingSlug] = useState(null); // slug of condition currently being saved
+
+  // Fetch the full conditions list from the backend on mount
+  useEffect(() => {
+    apiFetch("/api/conditions")
+      .then(setAllConditions)
+      .catch(() => setAllConditions([]))
+      .finally(() => setLoadingConditions(false));
+  }, []);
+
+  // Toggle a condition slug on the user — calls backend, updates local user state on success
+  const handleToggleCondition = async (slug) => {
+    if (togglingSlug) return; // prevent double-taps while saving
+    setTogglingSlug(slug);
+    try {
+      const hasIt = user.conditions.includes(slug);
+      let updatedUser;
+      if (hasIt) {
+        updatedUser = await apiFetch(`/api/users/${user._id}/conditions/${slug}`, { method: "DELETE" });
+      } else {
+        updatedUser = await apiFetch(`/api/users/${user._id}/conditions`, {
+          method: "POST",
+          body: JSON.stringify({ slug }),
+        });
+      }
+      onUserUpdate(updatedUser);
+    } catch (err) {
+      console.error("Failed to toggle condition:", err.message);
+    } finally {
+      setTogglingSlug(null);
+    }
+  };
+
   return (
     <div className="profile-screen">
- 
+
       {/* Header */}
       <div className="profile-header">
         <button onClick={onBack} className="back-btn">← Back to map</button>
         <h1>Profile</h1>
+        <button onClick={onLogout} style={{ marginLeft: "auto", background: "none", border: "none", fontSize: 13, color: "#6b7280", cursor: "pointer", padding: "6px 10px", borderRadius: 8 }}>
+          Sign out
+        </button>
       </div>
- 
-      {/* Profile info */}
+
       <div className="profile-body">
+
+        {/* Avatar + name */}
         <div className="profile-avatar-section">
           <img className="profilePicture" alt="profile" />
-          <h2>John Doe</h2>
-          <p className="profile-sub">Manage your notification preferences</p>
+          <h2>{user.firstName} {user.lastName}</h2>
+          <p className="profile-sub">@{user.username}</p>
         </div>
- 
-        {/* Notification categories */}
+
+        {/* Notify me about — hazard category toggles (local UI preference) */}
         <div className="pref-section">
           <h3>Notify me about</h3>
           <p className="pref-desc">Only alerts in selected categories will trigger a notification</p>
@@ -198,29 +330,51 @@ function ProfileScreen({ notifCategories, onToggleCategory, notifConditions, onT
             ))}
           </div>
         </div>
- 
-        {/* Conditions */}
+
+        {/* Accessibility conditions — fetched from backend, saved per user */}
         <div className="pref-section">
-          <h3>Conditions</h3>
-          <p className="pref-desc">Tell the app what conditions you would like to notify us about</p>
-          <div className="pref-list">
-            {CONDITIONS.map(c => (
-              <div key={c} className="pref-row" onClick={() => onToggleCondition(c)}>
-                <span className="pref-label">{c}</span>
-                <div className={`toggle ${notifConditions.includes(c) ? "on" : ""}`}>
-                  <div className="toggle-knob" />
-                </div>
-              </div>
-            ))}
-          </div>
+          <h3>My Conditions</h3>
+          <p className="pref-desc">
+            Select conditions that apply to you. The app will highlight hazards most relevant to your needs.
+          </p>
+          {loadingConditions ? (
+            <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>Loading conditions...</p>
+          ) : (
+            <div className="pref-list">
+              {allConditions.map(c => {
+                const active = user.conditions.includes(c.slug);
+                const saving = togglingSlug === c.slug;
+                return (
+                  <div key={c.slug} className="pref-row" onClick={() => handleToggleCondition(c.slug)}
+                    style={{ opacity: saving ? 0.5 : 1 }}>
+                    <span className="pref-label">{c.label}</span>
+                    <div className={`toggle ${active ? "on" : ""}`}>
+                      <div className="toggle-knob" />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
+
       </div>
     </div>
   );
 }
- 
+
+// ---------------------------------------------------------------------------
+// App — root component
+// Manages auth state via localStorage so the user stays logged in on refresh.
+// ---------------------------------------------------------------------------
 export default function App() {
   const [screen, setScreen] = useState("map"); // "map" | "profile"
+  const [user, setUser] = useState(() => {
+    // Rehydrate user from localStorage so login persists across page refreshes
+    const stored = localStorage.getItem("hh_user");
+    return stored ? JSON.parse(stored) : null;
+  });
+
   const [alerts, setAlerts] = useState(INITIAL_ALERTS);
   const [addMode, setAddMode] = useState(false);
   const [pendingLatLng, setPending] = useState(null);
@@ -235,11 +389,16 @@ export default function App() {
   const [searchMarker, setSearchMarker] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [notifCategories, setNotifCategories] = useState(Object.keys(CATS));
-  const [notifConditions, setNotifConditions] = useState([]);
   const notifiedIds = useRef(new Set());
   const flyToRef = useRef(null);
   const searchTimeout = useRef(null);
- 
+
+  // Persist user to localStorage whenever it changes
+  useEffect(() => {
+    if (user) localStorage.setItem("hh_user", JSON.stringify(user));
+    else localStorage.removeItem("hh_user");
+  }, [user]);
+
   useEffect(() => {
     if (!navigator.geolocation) { setGpsError("GPS not supported"); return; }
     const watchId = navigator.geolocation.watchPosition(
@@ -262,15 +421,11 @@ export default function App() {
     );
     return () => navigator.geolocation.clearWatch(watchId);
   }, [alerts, notifCategories]);
- 
+
   const toggleNotifCategory = (cat) => {
     setNotifCategories(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]);
   };
- 
-  const toggleNotifCondition = (cond) => {
-    setNotifConditions(prev => prev.includes(cond) ? prev.filter(c => c !== cond) : [...prev, cond]);
-  };
- 
+
   const handleSearchInput = (val) => {
     setSearchQuery(val);
     clearTimeout(searchTimeout.current);
@@ -288,7 +443,7 @@ export default function App() {
       }
     }, 500);
   };
- 
+
   const handleSearchSelect = (result) => {
     const pos = [parseFloat(result.lat), parseFloat(result.lon)];
     setSearchMarker(pos);
@@ -296,47 +451,53 @@ export default function App() {
     setSearchResults([]);
     if (flyToRef.current) flyToRef.current(pos, 14);
   };
- 
+
   const handleLocateMe = () => {
     if (userPos && flyToRef.current) flyToRef.current(userPos);
     else setGpsError("Location not available yet");
   };
- 
+
   const handleStillThere = (alertId) => {
     setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, confirms: (a.confirms || 0) + 1 } : a));
   };
- 
+
   const handleNotThere = (alertId) => {
     setAlerts(prev => prev
       .map(a => a.id === alertId ? { ...a, dismisses: (a.dismisses || 0) + 1 } : a)
       .filter(a => (a.dismisses || 0) < 3)
     );
   };
- 
+
   const filtered = activeFilter === "all" ? alerts : alerts.filter(a => a.cat === activeFilter);
- 
+
   const handleSubmit = ({ title, cat, desc }) => {
     setAlerts(prev => [...prev, { id: nextId, lat: pendingLatLng.lat, lng: pendingLatLng.lng, title, cat, desc, time: Date.now(), confirms: 0, dismisses: 0 }]);
     setNextId(n => n + 1);
     setPending(null);
     setAddMode(false);
   };
- 
+
+  // Show login screen if not authenticated
+  if (!user) {
+    return <LoginScreen onLogin={(u) => setUser(u)} />;
+  }
+
   if (screen === "profile") {
     return (
       <ProfileScreen
+        user={user}
+        onUserUpdate={(updatedUser) => setUser(updatedUser)}
         notifCategories={notifCategories}
         onToggleCategory={toggleNotifCategory}
-        notifConditions={notifConditions}
-        onToggleCondition={toggleNotifCondition}
         onBack={() => setScreen("map")}
+        onLogout={() => { setUser(null); setScreen("map"); }}
       />
     );
   }
- 
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
- 
+
       {/* Navbar */}
       <div style={{ padding: "10px 16px", background: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", zIndex: 500, position: "relative" }}>
         <span style={{ fontWeight: 600, fontSize: 16 }}>Hazard Hound</span>
@@ -369,7 +530,7 @@ export default function App() {
           </button>
         </div>
       </div>
- 
+
       {/* Filter bar */}
       <div style={{ padding: "8px 16px", background: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", gap: 8, zIndex: 500, position: "relative" }}>
         {["all", ...Object.keys(CATS)].map(cat => (
@@ -384,19 +545,19 @@ export default function App() {
           </button>
         ))}
       </div>
- 
+
       {addMode && !pendingLatLng && (
         <div style={{ background: "#E6F1FB", color: "#185FA5", fontSize: 13, padding: "8px 16px", textAlign: "center" }}>
           Click anywhere on the map to place your alert
         </div>
       )}
- 
+
       {notification && (
         <div style={{ background: "#FAEEDA", color: "#92400e", fontSize: 13, fontWeight: 500, padding: "8px 16px", textAlign: "center" }}>
           {notification}
         </div>
       )}
- 
+
       {/* Map */}
       <div style={{ flex: 1, position: "relative" }}>
         <MapContainer center={[40.73, -73.99]} zoom={13} style={{ height: "100%", width: "100%" }}>
@@ -426,7 +587,7 @@ export default function App() {
             </Marker>
           ))}
         </MapContainer>
- 
+
         {showNearby && (
           <NearbyPanel alerts={alerts} userPos={userPos} activeFilter={activeFilter} onFilterChange={setActiveFilter} onFlyTo={(pos) => flyToRef.current && flyToRef.current(pos, 16)} onClose={() => setShowNearby(false)} />
         )}
@@ -434,7 +595,7 @@ export default function App() {
           <AddAlertPanel latlng={pendingLatLng} onSubmit={handleSubmit} onClose={() => { setPending(null); setAddMode(false); }} />
         )}
       </div>
- 
+
       {/* Profile button */}
       <button className="profile-btn" onClick={() => setScreen("profile")} />
     </div>

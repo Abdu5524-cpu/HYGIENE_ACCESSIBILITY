@@ -37,6 +37,34 @@ const BCRYPT_SALT_ROUNDS = 10;
 const OMIT_PASSWORD = { passwordHash: 0 };
 
 // ---------------------------------------------------------------------------
+// POST /api/users/login — verify username + password, return user (no hash)
+// Must be declared before /:id so Express doesn't treat "login" as an id.
+// Expects: { username, password }
+// ---------------------------------------------------------------------------
+router.post("/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: "username and password are required" });
+    }
+
+    // Fetch the full document including passwordHash so we can compare
+    const user = await getDB().collection("users").findOne({ username });
+    if (!user) return res.status(401).json({ error: "Invalid username or password" });
+
+    const match = await bcrypt.compare(password, user.passwordHash);
+    if (!match) return res.status(401).json({ error: "Invalid username or password" });
+
+    // Return the user without the hash
+    const { passwordHash: _removed, ...safeUser } = user;
+    res.status(200).json(safeUser);
+  } catch (err) {
+    console.error("POST /api/users/login error:", err);
+    res.status(500).json({ error: "Login failed" });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // GET /api/users — return all users (no passwords)
 // ---------------------------------------------------------------------------
 router.get("/", async (req, res) => {
