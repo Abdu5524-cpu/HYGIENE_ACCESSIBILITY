@@ -1,0 +1,134 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.7">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">// src/App.jsx</p>
+<p class="p1">import { useState, useEffect } from 'react';</p>
+<p class="p1">import './App.css';</p>
+<p class="p2"><br></p>
+<p class="p1">function App() {</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const [hazardData, setHazardData] = useState({</p>
+<p class="p1"><span class="Apple-converted-space">    </span>fire: 0,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>gas: 1,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>structural: 3,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>air: 10,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>temp: 5,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>emf: 0,</p>
+<p class="p1"><span class="Apple-converted-space">    </span>touch: 0</p>
+<p class="p1"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const [timestamp, setTimestamp] = useState(new Date());</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>useEffect(() =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const timer = setInterval(() =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>setTimestamp(new Date());</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}, 1000);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return () =&gt; clearInterval(timer);</p>
+<p class="p1"><span class="Apple-converted-space">  </span>}, []);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const calculateTotal = () =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">    </span>return hazardData.fire + hazardData.gas + hazardData.structural +<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">           </span>hazardData.air + hazardData.temp + hazardData.emf + hazardData.touch;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>};</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const total = calculateTotal();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const statusText = total &lt; 10 ? "✓ SAFE" : total &lt; 30 ? "⚠️ CAUTION" : "🔴 DANGER";</p>
+<p class="p1"><span class="Apple-converted-space">  </span>const statusClass = total &lt; 10 ? "safe" : total &lt; 30 ? "warning" : "danger";</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>const hazards = [</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{ name: "FIRE", key: "fire", icon: "🔥", color: "fire" },</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{ name: "GAS", key: "gas", icon: "💨", color: "gas" },</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{ name: "STRUCTURAL", key: "structural", icon: "🏗️", color: "structural" },</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{ name: "AIR QUALITY", key: "air", icon: "🌫️", color: "air" },</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{ name: "INTERNAL TEMP", key: "temp", icon: "🌡️", color: "temp" },</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{ name: "EMF/EMI", key: "emf", icon: "⚡", color: "emf" },</p>
+<p class="p1"><span class="Apple-converted-space">    </span>{ name: "TOUCH", key: "touch", icon: "🖐️", color: "touch" }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>return (</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div className="dashboard"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div className="header"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;h1&gt;⚠️ HAZARD HOUND&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div className="subtitle"&gt;7 Hazard Detection | Fire • Gas • Structural • Air • Temp • EMF • Touch&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div className="main-status"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div className="percentage"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;span&gt;{total}&lt;/span&gt;&lt;span className="small"&gt;%&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div className={`status-label ${statusClass}`}&gt;{statusText}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div className="timestamp"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>Updated: {timestamp.toLocaleTimeString('en-US', { hour12: true })}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div className="hazard-grid"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>{hazards.map((hazard) =&gt; (</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;div className="hazard-item" key={hazard.key}&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div className="hazard-icon"&gt;{hazard.icon}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div className="hazard-info"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">              </span>&lt;div className="hazard-name"&gt;{hazard.name}&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">              </span>&lt;div className="hazard-bar-container"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                  </span>className={`hazard-bar bar-${hazard.color}`}<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">                  </span>style={{ width: `${hazardData[hazard.key]}%` }}</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">              </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div className="hazard-percent"&gt;{hazardData[hazard.key]}%&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>))}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div className="footer"&gt;Hazard Hound v1.0 • Real-time monitoring&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;style jsx&gt;{`</p>
+<p class="p1"><span class="Apple-converted-space">        </span>* { margin: 0; padding: 0; box-sizing: border-box; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0a0f1e 0%, #0c1222 100%); min-height: 100vh; padding: 2rem; color: #fff; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.dashboard { max-width: 500px; margin: 0 auto; background: rgba(18, 25, 45, 0.8); backdrop-filter: blur(10px); border-radius: 2rem; padding: 1.5rem; box-shadow: 0 25px 45px rgba(0,0,0,0.3); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.header { text-align: center; margin-bottom: 2rem; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.header h1 { font-size: 1.8rem; font-weight: 700; background: linear-gradient(135deg, #fff, #a0a8c0); -webkit-background-clip: text; background-clip: text; color: transparent; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.subtitle { font-size: 0.75rem; color: #6c7a9e; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.main-status { background: linear-gradient(135deg, #1a2542, #0f172a); border-radius: 1.5rem; padding: 1.5rem; text-align: center; margin-bottom: 1.5rem; border: 1px solid rgba(72, 187, 120, 0.3); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.percentage { font-size: 4rem; font-weight: 800; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.percentage .small { font-size: 1.5rem; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.status-label { font-size: 1.2rem; font-weight: 600; margin-top: 0.5rem; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.safe { color: #48bb78; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.warning { color: #f6ad55; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.danger { color: #fc8181; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.timestamp { font-size: 0.7rem; color: #6c7a9e; margin-top: 0.75rem; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.hazard-grid { display: flex; flex-direction: column; gap: 0.75rem; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.hazard-item { background: rgba(15, 23, 42, 0.6); border-radius: 1rem; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 1rem; border: 1px solid rgba(255,255,255,0.05); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.hazard-icon { width: 3rem; font-size: 1.5rem; text-align: center; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.hazard-info { flex: 1; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.hazard-name { font-weight: 600; font-size: 0.85rem; color: #a0aec0; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.hazard-bar-container { margin-top: 0.25rem; height: 0.5rem; background: rgba(255,255,255,0.1); border-radius: 1rem; overflow: hidden; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.hazard-bar { height: 100%; border-radius: 1rem; transition: width 0.3s ease; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.bar-fire { background: linear-gradient(90deg, #f56565, #fc8181); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.bar-gas { background: linear-gradient(90deg, #ed8936, #f6ad55); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.bar-structural { background: linear-gradient(90deg, #ecc94b, #f6e05e); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.bar-air { background: linear-gradient(90deg, #4299e1, #63b3ed); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.bar-temp { background: linear-gradient(90deg, #9f7aea, #b794f4); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.bar-emf { background: linear-gradient(90deg, #38b2ac, #4fd1c5); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.bar-touch { background: linear-gradient(90deg, #ed64a6, #f687b3); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.hazard-percent { font-size: 0.9rem; font-weight: 600; min-width: 2.5rem; text-align: right; color: #cbd5e0; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.footer { margin-top: 1.5rem; text-align: center; font-size: 0.7rem; color: #4a5568; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>@media (max-width: 550px) { body { padding: 1rem; } .percentage { font-size: 3rem; } }</p>
+<p class="p1"><span class="Apple-converted-space">      </span>`}&lt;/style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>);</p>
+<p class="p1">}</p>
+<p class="p2"><br></p>
+<p class="p1">export default App;</p>
+</body>
+</html>
